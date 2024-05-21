@@ -17,6 +17,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.LevkomAndroid"
+        tools:replace="android:allowBackup"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
@@ -28,5 +29,4 @@
             </intent-filter>
         </activity>
     </application>
-
 </manifest>

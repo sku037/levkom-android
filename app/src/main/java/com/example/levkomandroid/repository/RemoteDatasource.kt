@@ -11,7 +11,16 @@ import retrofit2.Response
 
 class RemoteDatasource(private val levkomService: LevkomService) {
     @Throws(Throwable::class)
-    suspend fun getRoutes(): List<RouteDto> = levkomService.getRoutes()
+    suspend fun getRoutes(): List<RouteDto> {
+        val response = levkomService.getRoutes()  // This returns a Response object
+        if (response.isSuccessful) {
+            // Successfully received the list of routes
+            return response.body() ?: throw Exception("No routes found")  // Return the list or throw if null
+        } else {
+            // Handle cases where the response is not successful
+            throw Exception("Failed to fetch routes: ${response.errorBody()?.string()}")
+        }
+    }
 
     @Throws(Throwable::class)
     suspend fun deleteRoute(routeId: Int): Boolean {
@@ -38,13 +47,17 @@ class RemoteDatasource(private val levkomService: LevkomService) {
         try {
             val response = levkomService.getAddressesByRouteIdWithOrder(routeId)  // Retrieve the Response object
             if (response.isSuccessful) {
+                Log.d("RemoteDatasource", "Addresses fetched successfully for route ID $routeId")
                 return response.body() ?: throw Exception("No data received")  // Return the response body if the request was successful
             } else {
+                Log.e("RemoteDatasource", "Failed to fetch addresses for route ID $routeId: ${response.errorBody()?.string()}")
                 throw Exception("Failed to fetch addresses: ${response.errorBody()?.string()}")  // Throw an exception in case of error
             }
         } catch (e: HttpException) {
+            Log.e("RemoteDatasource", "HTTP Exception while fetching addresses: ${e.response()?.errorBody()?.string()}", e)
             throw Exception("Failed to fetch addresses: ${e.response()?.errorBody()?.string()}")
         } catch (e: IOException) {
+            Log.e("RemoteDatasource", "Network error while fetching addresses: ${e.message}", e)
             throw Exception("Network error: ${e.message}")
         }
     }

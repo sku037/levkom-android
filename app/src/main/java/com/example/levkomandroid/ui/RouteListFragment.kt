@@ -6,11 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.example.levkomandroid.LevkomApplication
-import com.example.levkomandroid.R
 import com.example.levkomandroid.databinding.FragmentRouteListBinding
 import com.example.levkomandroid.viewmodel.LevkomViewModel
 import com.example.levkomandroid.viewmodel.LevkomViewModelFactory
@@ -53,9 +52,8 @@ class RouteListFragment : Fragment() {
 
     private fun setupClickListener(adapter: RouteAdapter) {
         adapter.onItemClick = { route ->
-//            val action =
-//                RoutelistFragmentDirections.actionRoutelistFragmentToEditRouteFragment(route.id)
-//            findNavController().navigate(action)
+            val action = RouteListFragmentDirections.actionRouteListFragmentToEditRouteFragment2(route.id)
+            findNavController().navigate(action)
         }
     }
 }

@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">LevkomAndroid</string>
-    <!-- TODO: Remove or change this placeholder text -->
+    <string name="nav_open">Open Navigation Drawer</string>
+    <string name="nav_close">Close Navigation Drawer</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="velkommen">Velkommen til Leveringskompis!</string>
+    <string name="velkommen1">Jeg hjelper deg med å bygge en effektiv rute for pakkelevering. For å komme i gang, velg "Ny Rute".</string>
+
 </resources>

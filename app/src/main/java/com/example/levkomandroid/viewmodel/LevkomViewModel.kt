@@ -50,7 +50,7 @@ class LevkomViewModel(private val repository: LevkomRepository) : ViewModel() {
 
     fun loadAddressesForRoute(routeId: Int) = viewModelScope.launch {
         repository.getAddressesByRouteIdWithOrder(routeId).collect { addresses ->
-            // Обновление списка адресов в UI
+            _addresses.postValue(addresses)
         }
     }
 }
