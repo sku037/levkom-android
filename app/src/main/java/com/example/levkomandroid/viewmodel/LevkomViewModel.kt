@@ -1,5 +1,6 @@
 package com.example.levkomandroid.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.example.levkomandroid.network.Address
 import com.example.levkomandroid.network.DeliveryAddr
@@ -18,6 +19,8 @@ class LevkomViewModel(private val repository: LevkomRepository) : ViewModel() {
     private val _addresses = MutableLiveData<List<DeliveryAddr>>()
     val addresses: LiveData<List<DeliveryAddr>> = _addresses
 
+    private val _error = MutableLiveData<String>()
+    val error: LiveData<String> = _error
     init {
         loadRoutes()
     }
@@ -30,13 +33,24 @@ class LevkomViewModel(private val repository: LevkomRepository) : ViewModel() {
 
     fun createNewRoute() = viewModelScope.launch {
         repository.createRoute().collect { newRouteId ->
-            // Обработка полученного ID нового маршрута
+            if (newRouteId > 0) {
+                _newRouteId.postValue(newRouteId)
+                loadAddressesForRoute(newRouteId)
+            } else {
+                _newRouteId.postValue(-1)
+            }
         }
     }
 
     fun deleteRoute(routeId: Int) = viewModelScope.launch {
-        repository.deleteRoute(routeId).collect {
-            // Обновление UI или списка маршрутов после удаления
+        repository.deleteRoute(routeId).collect { isSuccess ->
+            if (isSuccess) {
+                // Reload routelist for update UI
+                loadRoutes()
+            } else {
+                // Error handling
+                _error.postValue("Error deleting route.")
+            }
         }
     }
 

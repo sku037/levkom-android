@@ -61,11 +61,11 @@ interface LevkomService {
     @GET("api/routeslist/GetRoutes")
     suspend fun getRoutes(): Response<List<RouteDto>>
 
-    @DELETE("api/routeslist/DeleteRoute/{routeId}")
-    fun deleteRoute(@Path("routeId") routeId: Int): Call<Void>
+    @HTTP(method = "DELETE", path = "api/routeslist/DeleteRoute", hasBody = false)
+    suspend fun deleteRoute(@Query("routeId") routeId: Int): Response<Void>
 
     @POST("api/roadgraph/CreateRoute")
-    suspend fun createRoute(): Response<Int> // Assuming it returns an Int ID for the route
+    suspend fun createRoute(): Response<Int>
 
     @POST("api/RoadGraph/ImportSingleAddress")
     suspend fun importAddress(@Body address: Address, @Query("routeId") routeId: Int): Response<Void>

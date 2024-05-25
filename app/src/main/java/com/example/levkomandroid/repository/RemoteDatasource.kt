@@ -24,16 +24,23 @@ class RemoteDatasource(private val levkomService: LevkomService) {
 
     @Throws(Throwable::class)
     suspend fun deleteRoute(routeId: Int): Boolean {
-        val call = levkomService.deleteRoute(routeId)
-        val response = call.execute()
-        return response.isSuccessful
+        try {
+            val response = levkomService.deleteRoute(routeId)
+            return response.isSuccessful
+        } catch (e: IOException) {
+            // Error handling
+            throw Exception("Network error: ${e.message}", e)
+        } catch (e: HttpException) {
+            // HTTP error handling (egs. 404 or 500)
+            throw Exception("HTTP error: ${e.response()?.errorBody()?.string()}", e)
+        }
     }
-
     @Throws(Throwable::class)
     suspend fun createRoute(): Int {
         val response = levkomService.createRoute()
         return response.body() ?: throw Exception("No route ID returned")
     }
+
 
     @Throws(Throwable::class)
     suspend fun importAddress(address: Address, routeId: Int): Void {
@@ -44,21 +51,16 @@ class RemoteDatasource(private val levkomService: LevkomService) {
 
     @Throws(Throwable::class)
     suspend fun getAddressesByRouteIdWithOrder(routeId: Int): List<DeliveryAddr> {
-        try {
-            val response = levkomService.getAddressesByRouteIdWithOrder(routeId)  // Retrieve the Response object
-            if (response.isSuccessful) {
-                Log.d("RemoteDatasource", "Addresses fetched successfully for route ID $routeId")
-                return response.body() ?: throw Exception("No data received")  // Return the response body if the request was successful
-            } else {
-                Log.e("RemoteDatasource", "Failed to fetch addresses for route ID $routeId: ${response.errorBody()?.string()}")
-                throw Exception("Failed to fetch addresses: ${response.errorBody()?.string()}")  // Throw an exception in case of error
-            }
-        } catch (e: HttpException) {
-            Log.e("RemoteDatasource", "HTTP Exception while fetching addresses: ${e.response()?.errorBody()?.string()}", e)
-            throw Exception("Failed to fetch addresses: ${e.response()?.errorBody()?.string()}")
-        } catch (e: IOException) {
-            Log.e("RemoteDatasource", "Network error while fetching addresses: ${e.message}", e)
-            throw Exception("Network error: ${e.message}")
+        if (routeId <= 0) {
+            throw Exception("Invalid route ID: $routeId")
+        }
+
+        val response = levkomService.getAddressesByRouteIdWithOrder(routeId)
+        if (response.isSuccessful) {
+            return response.body() ?: throw Exception("No data received")
+        } else {
+            throw Exception("Failed to fetch addresses: ${response.errorBody()?.string()}")
         }
     }
+
 }

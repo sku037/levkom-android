@@ -28,4 +28,14 @@ class EditRouteFragment : BaseRouteFragment() {
 
         return binding.root
     }
+
+    override fun initMap() {
+        super.initMap()
+        // Additional map setup specific to NewRouteFragment if needed
+    }
+
+    override fun setupLocationCallback() {
+        super.setupLocationCallback()
+        // Custom location callback setup for NewRouteFragment if necessary
+    }
 }

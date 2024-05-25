@@ -25,6 +25,9 @@
         <argument
             android:name="routeId"
             app:argType="integer" />
+        <action
+            android:id="@+id/action_editRouteFragment_to_routeListFragment"
+            app:destination="@id/routeListFragment" />
     </fragment>
     <fragment
         android:id="@+id/mainFragment"
