@@ -167,7 +167,7 @@ class EditRouteFragment : Fragment() {
         lines.forEach { line ->
             val routeLayer = Polyline() // Create new object Polyline for each line
             routeLayer.width = 10f
-            routeLayer.color = Color.parseColor("#FF0000") 
+            routeLayer.color = Color.parseColor("#FF0000")
 
             val points = line.trim().split(",")
             val geoPoints = points.map { coord ->
