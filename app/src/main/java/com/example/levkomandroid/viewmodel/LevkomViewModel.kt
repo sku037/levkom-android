@@ -21,6 +21,16 @@ class LevkomViewModel(private val repository: LevkomRepository) : ViewModel() {
 
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> = _error
+
+    private val _message = MutableLiveData<String>()
+    val message: LiveData<String> = _message
+
+    private val _routeGeometry = MutableLiveData<String>()
+    val routeGeometry: LiveData<String> = _routeGeometry
+
+    private val _failedAddresses = MutableLiveData<List<Address>>()
+    val failedAddresses: LiveData<List<Address>> = _failedAddresses
+
     init {
         loadRoutes()
     }
@@ -54,17 +64,57 @@ class LevkomViewModel(private val repository: LevkomRepository) : ViewModel() {
         }
     }
 
-    fun importAddresses(addresses: List<Address>, routeId: Int) = viewModelScope.launch {
-        addresses.forEach { address ->
-            repository.importAddress(address, routeId).collect {
-                // Обработка результатов импорта адреса
+    fun loadAddressesForRoute(routeId: Int) = viewModelScope.launch {
+        repository.getAddressesByRouteIdWithOrder(routeId).collect { addresses ->
+            _addresses.postValue(addresses)
+        }
+    }
+
+    fun importAddresses(jsonContent: String, routeId: Int) = viewModelScope.launch {
+        repository.importAddresses(jsonContent, routeId).collect { result ->
+            if (!result.failed.isNullOrEmpty()) {
+                _message.postValue(result.failed)
+            } else {
+                _message.postValue("Success: ${result.success}")
+            }
+            _failedAddresses.postValue(result.failedAddresses ?: emptyList())
+        }
+    }
+
+    fun deleteAddress(addressId: Int, routeId: Int) = viewModelScope.launch {
+        repository.deleteAddress(addressId, routeId).collect { isSuccess ->
+            if (isSuccess) {
+                loadAddressesForRoute(routeId)
+            } else {
+                // Обработка ошибок
+                _error.postValue("Error deleting address.")
             }
         }
     }
 
-    fun loadAddressesForRoute(routeId: Int) = viewModelScope.launch {
+    fun calculateRoute(routeId: Int) = viewModelScope.launch {
+        repository.calculateRoute(routeId).collect { isSuccess ->
+        if (isSuccess) {
+            loadAddressesAndRoute(routeId)
+        } else {
+            _error.postValue("Error calculating route.")
+        }
+        }
+    }
+
+    private suspend fun loadAddressesAndRoute(routeId: Int) {
         repository.getAddressesByRouteIdWithOrder(routeId).collect { addresses ->
             _addresses.postValue(addresses)
+            val geometry = repository.getRouteGeometryByRouteId(routeId)
+            if (!geometry.isNullOrEmpty()) {
+                _routeGeometry.postValue(geometry)
+            }
+        }
+    }
+
+    fun loadAddressesAndRoutePublic(routeId: Int) {
+        viewModelScope.launch {
+            loadAddressesAndRoute(routeId)
         }
     }
 }

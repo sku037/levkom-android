@@ -51,16 +51,70 @@ class RemoteDatasource(private val levkomService: LevkomService) {
 
     @Throws(Throwable::class)
     suspend fun getAddressesByRouteIdWithOrder(routeId: Int): List<DeliveryAddr> {
-        if (routeId <= 0) {
-            throw Exception("Invalid route ID: $routeId")
+        try {
+            val response = levkomService.getAddressesByRouteIdWithOrder(routeId)  // Retrieve the Response object
+            if (response.isSuccessful) {
+                Log.d("RemoteDatasource", "Addresses fetched successfully for route ID $routeId")
+                return response.body() ?: throw Exception("No data received")  // Return the response body if the request was successful
+            } else {
+                Log.e("RemoteDatasource", "Failed to fetch addresses for route ID $routeId: ${response.errorBody()?.string()}")
+                throw Exception("Failed to fetch addresses: ${response.errorBody()?.string()}")  // Throw an exception in case of error
+            }
+        } catch (e: HttpException) {
+            Log.e("RemoteDatasource", "HTTP Exception while fetching addresses: ${e.response()?.errorBody()?.string()}", e)
+            throw Exception("Failed to fetch addresses: ${e.response()?.errorBody()?.string()}")
+        } catch (e: IOException) {
+            Log.e("RemoteDatasource", "Network error while fetching addresses: ${e.message}", e)
+            throw Exception("Network error: ${e.message}")
         }
+    }
 
-        val response = levkomService.getAddressesByRouteIdWithOrder(routeId)
+    @Throws(Throwable::class)
+    suspend fun importAddresses(jsonContent: String, routeId: Int): ImportAddressesResult {
+        val response = levkomService.importAddresses(jsonContent, routeId)
         if (response.isSuccessful) {
-            return response.body() ?: throw Exception("No data received")
+            return response.body() ?: throw Exception("No response body")
         } else {
-            throw Exception("Failed to fetch addresses: ${response.errorBody()?.string()}")
+            throw Exception("Failed to import addresses: ${response.errorBody()?.string()}")
         }
+    }
+
+    @Throws(Throwable::class)
+    suspend fun deleteAddress(addressId: Int, routeId: Int): Boolean {
+        try {
+            val response = levkomService.deleteAddress(addressId, routeId)
+            return response.isSuccessful
+        } catch (e: IOException) {
+            // Обработка ошибок связи
+            throw Exception("Network error: ${e.message}", e)
+        } catch (e: HttpException) {
+            // Обработка ошибок HTTP
+            throw Exception("HTTP error: ${e.response()?.errorBody()?.string()}", e)
+        }
+    }
+
+    // Calculate route calculation
+    suspend fun calculateRoute(routeId: Int): Boolean {
+        return try {
+            val response = levkomService.calculateRoute(routeId)
+            response.isSuccessful
+        } catch (e: Exception) {
+            throw Exception("Error in calculating route: ${e.localizedMessage}", e)
+        }
+    }
+    // Get geometry of the route
+    suspend fun getRouteGeometryByRouteId(routeId: Int): String? {
+        try {
+            val response = levkomService.getRouteGeometryByRouteId(routeId)
+            if (response.isSuccessful && response.body() != null) {
+                return response.body()
+            } else {
+                System.out.println("Server responded with error code: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            System.out.println("Error getting route geometry: ${e.message}")
+        }
+        return null
     }
 
 }
