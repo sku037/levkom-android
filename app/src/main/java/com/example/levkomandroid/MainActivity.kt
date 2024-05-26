@@ -26,43 +26,42 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var toggle: ActionBarDrawerToggle
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.navHostFragment) as NavHostFragment
-        navController = navHostFragment.navController
-
         val toolbar: Toolbar = binding.toolbar
         setSupportActionBar(toolbar)
 
         val drawerLayout: DrawerLayout = binding.drawerLayout
-        val navView: NavigationView = binding.navigationDrawer
-//        val navController = findNavController(R.id.navHostFragment)
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        navController = navHostFragment.navController
 
-        // Set up ActionBarToggle
-        toggle = ActionBarDrawerToggle(
-            this, drawerLayout, toolbar, R.string.nav_open, R.string.nav_close
+        val toggle = ActionBarDrawerToggle(
+            this, drawerLayout, toolbar,
+            R.string.navigation_drawer_open, R.string.navigation_drawer_close
         )
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
-        // Defining navigation drawer and nav controller
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.mainFragment, R.id.newRouteFragment, R.id.routeListFragment, R.id.roadIssuesFragment, R.id.profileFragment
-            ), drawerLayout
+                R.id.mainFragment,
+                R.id.newRouteFragment,
+                R.id.routeListFragment,
+                R.id.roadIssuesFragment,
+                R.id.profileFragment
+            ),
+            drawerLayout
         )
 
         setupActionBarWithNavController(navController, appBarConfiguration)
-        navView.setupWithNavController(navController)
+        binding.navigationDrawer.setupWithNavController(navController)
     }
+
     override fun onSupportNavigateUp(): Boolean {
-        return NavigationUI.navigateUp(navController, appBarConfiguration) || super.onSupportNavigateUp()
+        return navController.navigateUp() || super.onSupportNavigateUp()
     }
 
     override fun onBackPressed() {

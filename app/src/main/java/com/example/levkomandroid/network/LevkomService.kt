@@ -70,8 +70,21 @@ interface LevkomService {
     @POST("api/RoadGraph/ImportSingleAddress")
     suspend fun importAddress(@Body address: Address, @Query("routeId") routeId: Int): Response<Void>
 
+    @POST("api/RoadGraph/ImportAddresses")
+    suspend fun importAddresses(@Body jsonContent: String, @Query("routeId") routeId: Int): Response<ImportAddressesResult>
+
     @GET("api/roadgraph/GetAddressesByRouteIdWithOrder")
     suspend fun getAddressesByRouteIdWithOrder(@Query("routeId") routeId: Int): Response<List<DeliveryAddr>>
+
+    @HTTP(method = "DELETE", path = "api/DeleteAddress", hasBody = false)
+    suspend fun deleteAddress(@Query("addressId") addressId: Int, @Query("routeId") routeId: Int): Response<Void>
+
+    @POST("api/RoadGraph/CalculateRoute/{routeId}")
+    suspend fun calculateRoute(@Path("routeId") routeId: Int): Response<Void>
+
+    // Get geometry for route
+    @GET("api/RoadGraph/GetRouteGeometryByRouteId")
+    suspend fun getRouteGeometryByRouteId(@Query("routeId") routeId: Int): Response<String>
 }
 
 // Singleton object to access the retrofit service
