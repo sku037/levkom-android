@@ -48,6 +48,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.util.Log
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 
@@ -103,6 +104,10 @@ class NewRouteFragment : Fragment() {
             importAddresses()
         }
 
+        binding.btnCalculateRouteNew.setOnClickListener {
+            calculateRoute()
+        }
+
         // Initialize RecyclerView for displaying addresses
         binding.rvAddresses.apply {
             layoutManager = LinearLayoutManager(context)
@@ -123,8 +128,57 @@ class NewRouteFragment : Fragment() {
             (binding.rvAddresses.adapter as AddressAdapter).submitList(addresses)
             plotAddressesOnMap(addresses)
         }
+        viewModel.routeGeometry.observe(viewLifecycleOwner) { geometry ->
+            if (geometry.isNotEmpty()) {
+                Log.d("RouteGeometry", "Geometry received: $geometry")
+                plotRouteOnMap(geometry)
+            } else {
+                Log.d("RouteGeometry", "Empty geometry")
+            }
+        }
         checkPositionPermissions()
     }
+
+    // Calculate route draw route
+    private fun calculateRoute() {
+        viewModel.calculateRoute(routeId)
+    }
+
+    private fun plotRouteOnMap(routeGeometry: String) {
+        parseAndDrawRoute(routeGeometry, mapView)
+        // Find first Polyline object in overlays
+        mapView.overlays.firstOrNull { it is Polyline }?.let {
+            val polyline = it as Polyline
+            if (polyline.actualPoints.isNotEmpty()) {
+                mapView.controller.setCenter(polyline.actualPoints.first())
+                mapView.controller.setZoom(15)
+            }
+        }
+
+        mapView.invalidate()
+    }
+
+    private fun parseAndDrawRoute(wktString: String, mapView: MapView) {
+        val cleanWkt = wktString.removePrefix("MULTILINESTRING((").removeSuffix("))")
+        val lines = cleanWkt.split("),(")
+
+        lines.forEach { line ->
+            val routeLayer = Polyline() // Create new object Polyline for each line
+            routeLayer.width = 10f
+            routeLayer.color = Color.parseColor("#FF0000")
+
+            val points = line.trim().split(",")
+            val geoPoints = points.map { coord ->
+                val parts = coord.trim().split(" ")
+                GeoPoint(parts[1].toDouble(), parts[0].toDouble())  // Lat, Lon order
+            }
+            routeLayer.setPoints(geoPoints)
+            mapView.overlays.add(routeLayer) // Add Polyline to map
+        }
+
+        mapView.invalidate() // Update map to show new layers
+    }
+
 
     // Delete addresses from rvAddresses
     private fun setupSwipeListener(recyclerView: RecyclerView, routeId: Int) {
@@ -147,7 +201,8 @@ class NewRouteFragment : Fragment() {
             if (newRouteId != null && newRouteId > 0) {
                 // Handle new route ID, for example, fetching addresses for the new route
                 routeId = newRouteId
-                viewModel.loadAddressesForRoute(newRouteId)
+                //viewModel.loadAddressesForRoute(newRouteId)
+                viewModel.loadAddressesAndRoutePublic(routeId)
                 binding.tvRouteIdNew.text = "Route ID: $newRouteId"
             } else {
                 Toast.makeText(context, "Failed to create new route.", Toast.LENGTH_LONG).show()
@@ -285,48 +340,17 @@ class NewRouteFragment : Fragment() {
 
     // Adds overlays such as compass and scale bar to the map
     private fun addMapOverlays() {
-        val compassOverlay = CompassOverlay(requireContext(), InternalCompassOrientationProvider(requireContext()), mapView).apply {
-            enableCompass()
-        }
-        mapView.overlays.add(compassOverlay)
+//        val compassOverlay = CompassOverlay(requireContext(), InternalCompassOrientationProvider(requireContext()), mapView).apply {
+//            enableCompass()
+//        }
+//        mapView.overlays.add(compassOverlay)
 
         val scaleBarOverlay = ScaleBarOverlay(mapView).apply {
             setCentred(true)
             setScaleBarOffset(resources.displayMetrics.widthPixels / 2, 10)
         }
         mapView.overlays.add(scaleBarOverlay)
-
-        // Responds to map events such as single taps and long presses
-        val eventsReceiver = object : MapEventsReceiver {
-            override fun singleTapConfirmedHelper(geoPoint: GeoPoint): Boolean {
-                addMarker(geoPoint, R.drawable.ic_geopoint2)
-                return false
-            }
-
-            override fun longPressHelper(geoPoint: GeoPoint): Boolean {
-                return false
-            }
-        }
-        mapView.overlays.add(MapEventsOverlay(eventsReceiver))
     }
-
-    // Sets up buttons for location services and tracking
-//    private fun setupButtons() {
-//        binding.btnPosition.setOnClickListener {
-//            requestedService = SERVICE_LAST_KNOWN_POSITION
-//            checkPositionPermissions()
-//        }
-//
-//        binding.btnStartTracking.setOnClickListener {
-//            requestedService = SERVICE_POSITION_TRACKING
-//            requestingLocationUpdates = true
-//            checkPositionPermissions()
-//        }
-//
-//        binding.btnStopTracking.setOnClickListener {
-//            stopLocationUpdates()
-//        }
-//    }
 
     // Restores the state of location updates when the view is recreated
     private fun restoreLocationUpdatesState(savedInstanceState: Bundle?) {
@@ -353,7 +377,6 @@ class NewRouteFragment : Fragment() {
     // Updates the UI with the current location information
     private fun updateLocationUI(location: Location) {
         val posString = "Sporing:\nLat: ${location.latitude}\nLng: ${location.longitude}"
-//        binding.tvTracking.text = posString
         val geoPoint = GeoPoint(location.latitude, location.longitude)
         mapView.controller.setCenter(geoPoint)
         addMarker(geoPoint, R.drawable.ic_rdot)
@@ -361,12 +384,13 @@ class NewRouteFragment : Fragment() {
 
     // Adds a marker to the map at the specified geopoint
     private fun addMarker(geoPoint: GeoPoint, drawableId: Int) {
-        Marker(mapView).apply {
-            position = geoPoint
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-            icon = resources.getDrawable(drawableId, null)
-            title = "Klikkpunkt"
-            mapView.overlays.add(this)
+        if (mapView != null) {
+            val marker = Marker(mapView)
+            marker.position = geoPoint
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+            marker.icon = resources.getDrawable(drawableId, null)
+            marker.title = "Klikkpunkt"
+            mapView.overlays.add(marker)
         }
     }
 
@@ -376,9 +400,6 @@ class NewRouteFragment : Fragment() {
 
         if (requestingLocationUpdates) startLocationUpdates()
         mapView.onResume() // needed for compass, my location overlays, v6.0.0 and up
-
-
-
     }
 
     override fun onPause() {
@@ -387,20 +408,16 @@ class NewRouteFragment : Fragment() {
         mapView.onPause() // needed for compass, my location overlays, v6.0.0 and up
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mapView.onDetach()
+    }
+
     // Saves the state of location updates
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean("REQUESTING_LOCATION_UPDATES_KEY", requestingLocationUpdates)
     }
-
-    // Checks if location permissions are granted
-//    private fun checkPositionPermissions() {
-//        when {
-//            hasPermissions() -> checkLocationRequirements()
-//            shouldShowRequestPermissionRationale(permissions[0]) -> showPositionPermissionRationale()
-//            else -> requestPositionPermission()
-//        }
-//    }
     private fun checkPositionPermissions() {
         when {
             ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ->
