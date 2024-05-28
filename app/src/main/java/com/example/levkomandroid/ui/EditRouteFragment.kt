@@ -275,7 +275,7 @@ class EditRouteFragment : Fragment() {
             if (addresses.isNotEmpty()) {
                 val gson = Gson()
                 val jsonContent = gson.toJson(addresses)
-                viewModel.importAddresses(jsonContent, currentRouteId)
+                viewModel.importAddresses(jsonContent, routeId)
                 Toast.makeText(context, "Addresses imported successfully", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(context, "No addresses to import", Toast.LENGTH_SHORT).show()
