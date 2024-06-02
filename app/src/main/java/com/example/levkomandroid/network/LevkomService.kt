@@ -71,7 +71,7 @@ interface LevkomService {
     suspend fun importAddress(@Body address: Address, @Query("routeId") routeId: Int): Response<Void>
 
     @POST("api/RoadGraph/ImportAddresses")
-    suspend fun importAddresses(@Body jsonContent: String, @Query("routeId") routeId: Int): Response<ImportAddressesResult>
+    suspend fun importAddresses(@Body addresses: List<Address>, @Query("routeId") routeId: Int): Response<ImportAddressesResult>
 
     @GET("api/roadgraph/GetAddressesByRouteIdWithOrder")
     suspend fun getAddressesByRouteIdWithOrder(@Query("routeId") routeId: Int): Response<List<DeliveryAddr>>

@@ -1,74 +1,53 @@
 package com.example.levkomandroid
 
+import android.graphics.drawable.ColorDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.MenuItem
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.appcompat.widget.Toolbar
-import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.NavigationUI
+import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.example.levkomandroid.databinding.ActivityMainBinding
 import com.example.levkomandroid.ui.*
 import com.google.android.material.navigation.NavigationView
 
+
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+    private lateinit var drawerLayout: DrawerLayout
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var navigationView: NavigationView
+
+    private lateinit var listener: NavController.OnDestinationChangedListener
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
 
-        val toolbar: Toolbar = binding.toolbar
-        setSupportActionBar(toolbar)
+        navController = findNavController(R.id.navHostFragment)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.navigationView)
+        navigationView.setupWithNavController(navController)
 
-        val drawerLayout: DrawerLayout = binding.drawerLayout
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
-        navController = navHostFragment.navController
-
-        val toggle = ActionBarDrawerToggle(
-            this, drawerLayout, toolbar,
-            R.string.navigation_drawer_open, R.string.navigation_drawer_close
-        )
-        drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
-
-        appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.mainFragment,
-                R.id.newRouteFragment,
-                R.id.routeListFragment,
-                R.id.roadIssuesFragment,
-                R.id.profileFragment
-            ),
-            drawerLayout
-        )
+        appBarConfiguration = AppBarConfiguration(navController.graph, drawerLayout)
 
         setupActionBarWithNavController(navController, appBarConfiguration)
-        binding.navigationDrawer.setupWithNavController(navController)
+
+        listener = NavController.OnDestinationChangedListener { controller, destination, arguments ->
+            if(destination.id == R.id.mainFragment) {
+                supportActionBar?.setBackgroundDrawable(ColorDrawable(getColor(R.color.black)))
+            }else if(destination.id == R.id.newRouteFragment){
+                supportActionBar?.setBackgroundDrawable(ColorDrawable(getColor(R.color.white)))
+            }
+        }
     }
+
 
     override fun onSupportNavigateUp(): Boolean {
-        return navController.navigateUp() || super.onSupportNavigateUp()
-    }
-
-    override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
-        } else {
-            super.onBackPressed()
-        }
+        val navController = findNavController(R.id.navHostFragment)
+        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 }

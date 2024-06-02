@@ -70,8 +70,8 @@ class RemoteDatasource(private val levkomService: LevkomService) {
     }
 
     @Throws(Throwable::class)
-    suspend fun importAddresses(jsonContent: String, routeId: Int): ImportAddressesResult {
-        val response = levkomService.importAddresses(jsonContent, routeId)
+    suspend fun importAddresses(addresses: List<Address>, routeId: Int): ImportAddressesResult {
+        val response = levkomService.importAddresses(addresses, routeId)
         if (response.isSuccessful) {
             return response.body() ?: throw Exception("No response body")
         } else {

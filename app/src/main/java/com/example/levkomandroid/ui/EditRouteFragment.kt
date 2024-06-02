@@ -52,6 +52,13 @@ import android.graphics.drawable.BitmapDrawable
 import android.util.Log
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.GsonBuilder
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import org.json.JSONArray
+import org.json.JSONObject
 
 class EditRouteFragment : Fragment() {
     private lateinit var binding: FragmentEditRouteBinding
@@ -170,16 +177,29 @@ class EditRouteFragment : Fragment() {
             routeLayer.color = Color.parseColor("#FF0000")
 
             val points = line.trim().split(",")
-            val geoPoints = points.map { coord ->
+            val geoPoints = points.mapNotNull { coord ->
                 val parts = coord.trim().split(" ")
-                GeoPoint(parts[1].toDouble(), parts[0].toDouble())  // Lat, Lon order
+                try {
+                    if (parts.size >= 2) {
+                        GeoPoint(parts[1].toDouble(), parts[0].toDouble()) // Lat, Lon order
+                    } else {
+                        null // Возвращает null, если не хватает данных для создания точки
+                    }
+                } catch (e: NumberFormatException) {
+                    // Здесь можно логировать ошибочные данные для последующего анализа
+                    println("Ошибка при парсинге координат: '${parts.joinToString()}', ошибка: ${e.message}")
+                    null // Пропускаем некорректные данные
+                }
             }
-            routeLayer.setPoints(geoPoints)
-            mapView.overlays.add(routeLayer) // Добавляем Polyline на карту
+            if (geoPoints.isNotEmpty()) {
+                routeLayer.setPoints(geoPoints)
+                mapView.overlays.add(routeLayer) // Добавляем Polyline на карту
+            }
         }
 
         mapView.invalidate() // Обновить карту для отображения новых слоев
     }
+
 
 
 
@@ -253,11 +273,14 @@ class EditRouteFragment : Fragment() {
         }
     }
 
-    // Reads a JSON file and parses addresses to be imported
+    // Read json file
     private fun readJsonFile(uri: Uri) {
         val inputStream = requireContext().contentResolver.openInputStream(uri)
         val jsonString = inputStream?.bufferedReader().use { it?.readText() }
-        addressesToImport = Gson().fromJson(jsonString, Array<Address>::class.java).toList()
+        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+        val listType = Types.newParameterizedType(List::class.java, Address::class.java)
+        val adapter: JsonAdapter<List<Address>> = moshi.adapter(listType)
+        addressesToImport = adapter.fromJson(jsonString)
 
         // Update UI based on file content
         if (addressesToImport?.isNotEmpty() == true) {
@@ -269,13 +292,12 @@ class EditRouteFragment : Fragment() {
         }
     }
 
+
     // Imports addresses into the route
     private fun importAddresses() {
         addressesToImport?.let { addresses ->
             if (addresses.isNotEmpty()) {
-                val gson = Gson()
-                val jsonContent = gson.toJson(addresses)
-                viewModel.importAddresses(jsonContent, routeId)
+                viewModel.importAddresses(addresses, routeId)
                 Toast.makeText(context, "Addresses imported successfully", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(context, "No addresses to import", Toast.LENGTH_SHORT).show()
@@ -285,6 +307,7 @@ class EditRouteFragment : Fragment() {
             Toast.makeText(context, "Please select a file first", Toast.LENGTH_SHORT).show()
         }
     }
+
 
 
     companion object {

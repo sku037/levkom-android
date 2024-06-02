@@ -51,6 +51,10 @@ import android.graphics.Typeface
 import android.util.Log
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 
 class NewRouteFragment : Fragment() {
@@ -289,7 +293,10 @@ class NewRouteFragment : Fragment() {
     private fun readJsonFile(uri: Uri) {
         val inputStream = requireContext().contentResolver.openInputStream(uri)
         val jsonString = inputStream?.bufferedReader().use { it?.readText() }
-        addressesToImport = Gson().fromJson(jsonString, Array<Address>::class.java).toList()
+        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+        val listType = Types.newParameterizedType(List::class.java, Address::class.java)
+        val adapter: JsonAdapter<List<Address>> = moshi.adapter(listType)
+        addressesToImport = adapter.fromJson(jsonString)
 
         // Update UI based on file content
         if (addressesToImport?.isNotEmpty() == true) {
@@ -305,9 +312,7 @@ class NewRouteFragment : Fragment() {
     private fun importAddresses() {
         addressesToImport?.let { addresses ->
             if (addresses.isNotEmpty()) {
-                val gson = Gson()
-                val jsonContent = gson.toJson(addresses)
-                viewModel.importAddresses(jsonContent, currentRouteId)
+                viewModel.importAddresses(addresses, routeId)
                 Toast.makeText(context, "Addresses imported successfully", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(context, "No addresses to import", Toast.LENGTH_SHORT).show()
@@ -317,6 +322,7 @@ class NewRouteFragment : Fragment() {
             Toast.makeText(context, "Please select a file first", Toast.LENGTH_SHORT).show()
         }
     }
+
 
 
     companion object {

@@ -41,8 +41,8 @@ class LevkomRepository constructor(
         emit(remoteDatasource.getAddressesByRouteIdWithOrder(routeId))
     }
 
-    suspend fun importAddresses(jsonContent: String, routeId: Int): Flow<ImportAddressesResult> = flow {
-        emit(remoteDatasource.importAddresses(jsonContent, routeId))
+    suspend fun importAddresses(addresses: List<Address>, routeId: Int): Flow<ImportAddressesResult> = flow {
+        emit(remoteDatasource.importAddresses(addresses, routeId))
     }
 
     suspend fun deleteAddress(addressId: Int, routeId: Int): Flow<Boolean> = flow {

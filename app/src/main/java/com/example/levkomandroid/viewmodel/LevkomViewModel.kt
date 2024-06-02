@@ -70,8 +70,8 @@ class LevkomViewModel(private val repository: LevkomRepository) : ViewModel() {
         }
     }
 
-    fun importAddresses(jsonContent: String, routeId: Int) = viewModelScope.launch {
-        repository.importAddresses(jsonContent, routeId).collect { result ->
+    fun importAddresses(addresses: List<Address>, routeId: Int) = viewModelScope.launch {
+        repository.importAddresses(addresses, routeId).collect { result ->
             if (!result.failed.isNullOrEmpty()) {
                 _message.postValue(result.failed)
             } else {
